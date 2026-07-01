@@ -1,0 +1,21 @@
+{
+  "name": "Go Dev Container (1.25.11)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "workspaceFolder": "/go/src/github.com/duong-se/golang",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/go/src/github.com/duong-se/golang,type=bind,consistency=cached",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.Go"
+      ],
+      "settings": {
+        "go.useLanguageServer": true,
+        "go.toolsManagement.autoUpdate": true
+      }
+    }
+  },
+  "remoteUser": "root"
+}
