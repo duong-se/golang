@@ -1,5 +1,6 @@
 -- migrate:up
 SET TIME ZONE 'UTC';
+CREATE EXTENSION vector;
 -- PROJECT
 CREATE TABLE project (
   id UUID PRIMARY KEY,

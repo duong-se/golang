@@ -13,11 +13,8 @@ import (
 )
 
 const createAgent = `-- name: CreateAgent :one
-
-INSERT INTO agent (
-    id, name, endpoint, type, active, deleted_at
-)
-VALUES ($1,$2,$3,$4,$5,NULL)
+INSERT INTO agent (id, name, endpoint, type, active)
+VALUES ($1,$2,$3,$4,$5)
 RETURNING id, name, endpoint, type, active, deleted_at
 `
 
@@ -29,9 +26,6 @@ type CreateAgentParams struct {
 	Active   pgtype.Bool
 }
 
-// =========================
-// AGENT
-// =========================
 func (q *Queries) CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent, error) {
 	row := q.db.QueryRow(ctx, createAgent,
 		arg.ID,
@@ -53,12 +47,10 @@ func (q *Queries) CreateAgent(ctx context.Context, arg CreateAgentParams) (Agent
 }
 
 const createAgentRun = `-- name: CreateAgentRun :one
-
 INSERT INTO agent_run (
-    id, execution_state_id, agent_id, status, input, output,
-    started_at, finished_at, deleted_at
+  id, execution_state_id, agent_id, status, input, output, started_at, finished_at
 )
-VALUES ($1,$2,$3,$4,$5,$6,NOW(),NULL,NULL)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
 RETURNING id, execution_state_id, agent_id, status, input, output, started_at, finished_at, deleted_at
 `
 
@@ -69,11 +61,10 @@ type CreateAgentRunParams struct {
 	Status           pgtype.Text
 	Input            []byte
 	Output           []byte
+	StartedAt        pgtype.Timestamptz
+	FinishedAt       pgtype.Timestamptz
 }
 
-// =========================
-// AGENT RUN
-// =========================
 func (q *Queries) CreateAgentRun(ctx context.Context, arg CreateAgentRunParams) (AgentRun, error) {
 	row := q.db.QueryRow(ctx, createAgentRun,
 		arg.ID,
@@ -82,6 +73,8 @@ func (q *Queries) CreateAgentRun(ctx context.Context, arg CreateAgentRunParams) 
 		arg.Status,
 		arg.Input,
 		arg.Output,
+		arg.StartedAt,
+		arg.FinishedAt,
 	)
 	var i AgentRun
 	err := row.Scan(
@@ -99,11 +92,10 @@ func (q *Queries) CreateAgentRun(ctx context.Context, arg CreateAgentRunParams) 
 }
 
 const createApproval = `-- name: CreateApproval :one
-
 INSERT INTO approval (
-    id, execution_state_id, status, reviewer, comment, approved_at, deleted_at
+  id, execution_state_id, status, reviewer, comment, approved_at
 )
-VALUES ($1,$2,$3,$4,$5,$6,NULL)
+VALUES ($1,$2,$3,$4,$5,$6)
 RETURNING id, execution_state_id, status, reviewer, comment, approved_at, deleted_at
 `
 
@@ -116,9 +108,6 @@ type CreateApprovalParams struct {
 	ApprovedAt       pgtype.Timestamptz
 }
 
-// =========================
-// APPROVAL
-// =========================
 func (q *Queries) CreateApproval(ctx context.Context, arg CreateApprovalParams) (Approval, error) {
 	row := q.db.QueryRow(ctx, createApproval,
 		arg.ID,
@@ -142,11 +131,10 @@ func (q *Queries) CreateApproval(ctx context.Context, arg CreateApprovalParams) 
 }
 
 const createArtifact = `-- name: CreateArtifact :one
-
 INSERT INTO artifact (
-    id, project_id, type, name, latest_version, created_at, deleted_at
+  id, project_id, type, name, latest_version, created_at
 )
-VALUES ($1,$2,$3,$4,$5,NOW(),NULL)
+VALUES ($1,$2,$3,$4,$5,$6)
 RETURNING id, project_id, type, name, latest_version, created_at, deleted_at
 `
 
@@ -156,11 +144,9 @@ type CreateArtifactParams struct {
 	Type          pgtype.Text
 	Name          pgtype.Text
 	LatestVersion pgtype.Int4
+	CreatedAt     pgtype.Timestamptz
 }
 
-// =========================
-// ARTIFACT
-// =========================
 func (q *Queries) CreateArtifact(ctx context.Context, arg CreateArtifactParams) (Artifact, error) {
 	row := q.db.QueryRow(ctx, createArtifact,
 		arg.ID,
@@ -168,6 +154,7 @@ func (q *Queries) CreateArtifact(ctx context.Context, arg CreateArtifactParams) 
 		arg.Type,
 		arg.Name,
 		arg.LatestVersion,
+		arg.CreatedAt,
 	)
 	var i Artifact
 	err := row.Scan(
@@ -183,11 +170,10 @@ func (q *Queries) CreateArtifact(ctx context.Context, arg CreateArtifactParams) 
 }
 
 const createArtifactVersion = `-- name: CreateArtifactVersion :one
-
 INSERT INTO artifact_version (
-    id, artifact_id, version, storage_uri, checksum, metadata, created_at, deleted_at
+  id, artifact_id, version, storage_uri, checksum, metadata, created_at
 )
-VALUES ($1,$2,$3,$4,$5,$6,NOW(),NULL)
+VALUES ($1,$2,$3,$4,$5,$6,$7)
 RETURNING id, artifact_id, version, storage_uri, checksum, metadata, created_at, deleted_at
 `
 
@@ -198,11 +184,9 @@ type CreateArtifactVersionParams struct {
 	StorageUri pgtype.Text
 	Checksum   pgtype.Text
 	Metadata   []byte
+	CreatedAt  pgtype.Timestamptz
 }
 
-// =========================
-// ARTIFACT VERSION
-// =========================
 func (q *Queries) CreateArtifactVersion(ctx context.Context, arg CreateArtifactVersionParams) (ArtifactVersion, error) {
 	row := q.db.QueryRow(ctx, createArtifactVersion,
 		arg.ID,
@@ -211,6 +195,7 @@ func (q *Queries) CreateArtifactVersion(ctx context.Context, arg CreateArtifactV
 		arg.StorageUri,
 		arg.Checksum,
 		arg.Metadata,
+		arg.CreatedAt,
 	)
 	var i ArtifactVersion
 	err := row.Scan(
@@ -227,11 +212,10 @@ func (q *Queries) CreateArtifactVersion(ctx context.Context, arg CreateArtifactV
 }
 
 const createAuditLog = `-- name: CreateAuditLog :one
-
 INSERT INTO audit_log (
-    id, project_id, actor, action, payload, created_at, deleted_at
+  id, project_id, actor, action, payload, created_at
 )
-VALUES ($1,$2,$3,$4,$5,NOW(),NULL)
+VALUES ($1,$2,$3,$4,$5,$6)
 RETURNING id, project_id, actor, action, payload, created_at, deleted_at
 `
 
@@ -241,11 +225,9 @@ type CreateAuditLogParams struct {
 	Actor     pgtype.Text
 	Action    pgtype.Text
 	Payload   []byte
+	CreatedAt pgtype.Timestamptz
 }
 
-// =========================
-// AUDIT LOG
-// =========================
 func (q *Queries) CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) (AuditLog, error) {
 	row := q.db.QueryRow(ctx, createAuditLog,
 		arg.ID,
@@ -253,6 +235,7 @@ func (q *Queries) CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) 
 		arg.Actor,
 		arg.Action,
 		arg.Payload,
+		arg.CreatedAt,
 	)
 	var i AuditLog
 	err := row.Scan(
@@ -267,12 +250,50 @@ func (q *Queries) CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) 
 	return i, err
 }
 
-const createMemoryChunk = `-- name: CreateMemoryChunk :one
-
-INSERT INTO memory_chunk (
-    id, artifact_version_id, chunk_index, content, embedding, metadata, deleted_at
+const createExecutionState = `-- name: CreateExecutionState :one
+INSERT INTO workflow_execution_state (
+  id, execution_id, state_key, status, entered_at, exited_at
 )
-VALUES ($1,$2,$3,$4,$5,$6,NULL)
+VALUES ($1,$2,$3,$4,$5,$6)
+RETURNING id, execution_id, state_key, status, entered_at, exited_at, deleted_at
+`
+
+type CreateExecutionStateParams struct {
+	ID          pgtype.UUID
+	ExecutionID pgtype.UUID
+	StateKey    pgtype.Text
+	Status      pgtype.Text
+	EnteredAt   pgtype.Timestamptz
+	ExitedAt    pgtype.Timestamptz
+}
+
+func (q *Queries) CreateExecutionState(ctx context.Context, arg CreateExecutionStateParams) (WorkflowExecutionState, error) {
+	row := q.db.QueryRow(ctx, createExecutionState,
+		arg.ID,
+		arg.ExecutionID,
+		arg.StateKey,
+		arg.Status,
+		arg.EnteredAt,
+		arg.ExitedAt,
+	)
+	var i WorkflowExecutionState
+	err := row.Scan(
+		&i.ID,
+		&i.ExecutionID,
+		&i.StateKey,
+		&i.Status,
+		&i.EnteredAt,
+		&i.ExitedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const createMemoryChunk = `-- name: CreateMemoryChunk :one
+INSERT INTO memory_chunk (
+  id, artifact_version_id, chunk_index, content, embedding, metadata
+)
+VALUES ($1,$2,$3,$4,$5,$6)
 RETURNING id, artifact_version_id, chunk_index, content, embedding, metadata, deleted_at
 `
 
@@ -285,9 +306,6 @@ type CreateMemoryChunkParams struct {
 	Metadata          []byte
 }
 
-// =========================
-// MEMORY CHUNK
-// =========================
 func (q *Queries) CreateMemoryChunk(ctx context.Context, arg CreateMemoryChunkParams) (MemoryChunk, error) {
 	row := q.db.QueryRow(ctx, createMemoryChunk,
 		arg.ID,
@@ -311,12 +329,11 @@ func (q *Queries) CreateMemoryChunk(ctx context.Context, arg CreateMemoryChunkPa
 }
 
 const createProject = `-- name: CreateProject :one
-
 INSERT INTO project (
-    id, name, description, workflow_id, workflow_version, status, created_at, updated_at, deleted_at
+  id, name, description, workflow_id, workflow_version, status, created_at, updated_at
 )
 VALUES (
-    $1, $2, $3, $4, $5, $6, NOW(), NOW(), NULL
+  $1, $2, $3, $4, $5, $6, $7, $8
 )
 RETURNING id, name, description, workflow_id, workflow_version, status, created_at, updated_at, deleted_at
 `
@@ -328,11 +345,10 @@ type CreateProjectParams struct {
 	WorkflowID      pgtype.UUID
 	WorkflowVersion pgtype.Int4
 	Status          pgtype.Text
+	CreatedAt       pgtype.Timestamptz
+	UpdatedAt       pgtype.Timestamptz
 }
 
-// =========================
-// PROJECT
-// =========================
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
 	row := q.db.QueryRow(ctx, createProject,
 		arg.ID,
@@ -341,6 +357,8 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		arg.WorkflowID,
 		arg.WorkflowVersion,
 		arg.Status,
+		arg.CreatedAt,
+		arg.UpdatedAt,
 	)
 	var i Project
 	err := row.Scan(
@@ -358,13 +376,10 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 }
 
 const createWorkflow = `-- name: CreateWorkflow :one
-
 INSERT INTO workflow (
-    id, name, version, start_state, active, created_at, deleted_at
+  id, name, version, start_state, active, created_at
 )
-VALUES (
-    $1, $2, $3, $4, $5, NOW(), NULL
-)
+VALUES ($1,$2,$3,$4,$5,$6)
 RETURNING id, name, version, start_state, active, created_at, deleted_at
 `
 
@@ -374,11 +389,9 @@ type CreateWorkflowParams struct {
 	Version    pgtype.Int4
 	StartState pgtype.Text
 	Active     pgtype.Bool
+	CreatedAt  pgtype.Timestamptz
 }
 
-// =========================
-// WORKFLOW
-// =========================
 func (q *Queries) CreateWorkflow(ctx context.Context, arg CreateWorkflowParams) (Workflow, error) {
 	row := q.db.QueryRow(ctx, createWorkflow,
 		arg.ID,
@@ -386,6 +399,7 @@ func (q *Queries) CreateWorkflow(ctx context.Context, arg CreateWorkflowParams) 
 		arg.Version,
 		arg.StartState,
 		arg.Active,
+		arg.CreatedAt,
 	)
 	var i Workflow
 	err := row.Scan(
@@ -401,11 +415,10 @@ func (q *Queries) CreateWorkflow(ctx context.Context, arg CreateWorkflowParams) 
 }
 
 const createWorkflowEvent = `-- name: CreateWorkflowEvent :one
-
 INSERT INTO workflow_event (
-    id, execution_id, event_name, payload, created_at, deleted_at
+  id, execution_id, event_name, payload, created_at
 )
-VALUES ($1,$2,$3,$4,NOW(),NULL)
+VALUES ($1,$2,$3,$4,$5)
 RETURNING id, execution_id, event_name, payload, created_at, deleted_at
 `
 
@@ -414,17 +427,16 @@ type CreateWorkflowEventParams struct {
 	ExecutionID pgtype.UUID
 	EventName   pgtype.Text
 	Payload     []byte
+	CreatedAt   pgtype.Timestamptz
 }
 
-// =========================
-// WORKFLOW EVENT
-// =========================
 func (q *Queries) CreateWorkflowEvent(ctx context.Context, arg CreateWorkflowEventParams) (WorkflowEvent, error) {
 	row := q.db.QueryRow(ctx, createWorkflowEvent,
 		arg.ID,
 		arg.ExecutionID,
 		arg.EventName,
 		arg.Payload,
+		arg.CreatedAt,
 	)
 	var i WorkflowEvent
 	err := row.Scan(
@@ -439,12 +451,10 @@ func (q *Queries) CreateWorkflowEvent(ctx context.Context, arg CreateWorkflowEve
 }
 
 const createWorkflowExecution = `-- name: CreateWorkflowExecution :one
-
 INSERT INTO workflow_execution (
-    id, project_id, workflow_id, current_state, status,
-    started_at, finished_at, deleted_at
+  id, project_id, workflow_id, current_state, status, started_at, finished_at
 )
-VALUES ($1,$2,$3,$4,$5,NOW(),NULL,NULL)
+VALUES ($1,$2,$3,$4,$5,$6,$7)
 RETURNING id, project_id, workflow_id, current_state, status, started_at, finished_at, deleted_at
 `
 
@@ -454,11 +464,10 @@ type CreateWorkflowExecutionParams struct {
 	WorkflowID   pgtype.UUID
 	CurrentState pgtype.Text
 	Status       pgtype.Text
+	StartedAt    pgtype.Timestamptz
+	FinishedAt   pgtype.Timestamptz
 }
 
-// =========================
-// WORKFLOW EXECUTION
-// =========================
 func (q *Queries) CreateWorkflowExecution(ctx context.Context, arg CreateWorkflowExecutionParams) (WorkflowExecution, error) {
 	row := q.db.QueryRow(ctx, createWorkflowExecution,
 		arg.ID,
@@ -466,6 +475,8 @@ func (q *Queries) CreateWorkflowExecution(ctx context.Context, arg CreateWorkflo
 		arg.WorkflowID,
 		arg.CurrentState,
 		arg.Status,
+		arg.StartedAt,
+		arg.FinishedAt,
 	)
 	var i WorkflowExecution
 	err := row.Scan(
@@ -481,54 +492,12 @@ func (q *Queries) CreateWorkflowExecution(ctx context.Context, arg CreateWorkflo
 	return i, err
 }
 
-const createWorkflowExecutionState = `-- name: CreateWorkflowExecutionState :one
-
-INSERT INTO workflow_execution_state (
-    id, execution_id, state_key, status, entered_at, exited_at, deleted_at
-)
-VALUES ($1,$2,$3,$4,NOW(),NULL,NULL)
-RETURNING id, execution_id, state_key, status, entered_at, exited_at, deleted_at
-`
-
-type CreateWorkflowExecutionStateParams struct {
-	ID          pgtype.UUID
-	ExecutionID pgtype.UUID
-	StateKey    pgtype.Text
-	Status      pgtype.Text
-}
-
-// =========================
-// WORKFLOW EXECUTION STATE
-// =========================
-func (q *Queries) CreateWorkflowExecutionState(ctx context.Context, arg CreateWorkflowExecutionStateParams) (WorkflowExecutionState, error) {
-	row := q.db.QueryRow(ctx, createWorkflowExecutionState,
-		arg.ID,
-		arg.ExecutionID,
-		arg.StateKey,
-		arg.Status,
-	)
-	var i WorkflowExecutionState
-	err := row.Scan(
-		&i.ID,
-		&i.ExecutionID,
-		&i.StateKey,
-		&i.Status,
-		&i.EnteredAt,
-		&i.ExitedAt,
-		&i.DeletedAt,
-	)
-	return i, err
-}
-
 const createWorkflowState = `-- name: CreateWorkflowState :one
-
 INSERT INTO workflow_state (
-    id, workflow_id, state_key, state_name, agent_name,
-    timeout_seconds, retry_limit, is_terminal, deleted_at
+  id, workflow_id, state_key, state_name, agent_name,
+  timeout_seconds, retry_limit, is_terminal
 )
-VALUES (
-    $1,$2,$3,$4,$5,$6,$7,$8,NULL
-)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
 RETURNING id, workflow_id, state_key, state_name, agent_name, timeout_seconds, retry_limit, is_terminal, deleted_at
 `
 
@@ -543,9 +512,6 @@ type CreateWorkflowStateParams struct {
 	IsTerminal     pgtype.Bool
 }
 
-// =========================
-// WORKFLOW STATE
-// =========================
 func (q *Queries) CreateWorkflowState(ctx context.Context, arg CreateWorkflowStateParams) (WorkflowState, error) {
 	row := q.db.QueryRow(ctx, createWorkflowState,
 		arg.ID,
@@ -573,11 +539,10 @@ func (q *Queries) CreateWorkflowState(ctx context.Context, arg CreateWorkflowSta
 }
 
 const createWorkflowStateInput = `-- name: CreateWorkflowStateInput :one
-
 INSERT INTO workflow_state_input (
-    id, workflow_state_id, artifact_type, required, deleted_at
+  id, workflow_state_id, artifact_type, required
 )
-VALUES ($1,$2,$3,$4,NULL)
+VALUES ($1,$2,$3,$4)
 RETURNING id, workflow_state_id, artifact_type, required, deleted_at
 `
 
@@ -588,9 +553,6 @@ type CreateWorkflowStateInputParams struct {
 	Required        pgtype.Bool
 }
 
-// =========================
-// WORKFLOW STATE INPUT
-// =========================
 func (q *Queries) CreateWorkflowStateInput(ctx context.Context, arg CreateWorkflowStateInputParams) (WorkflowStateInput, error) {
 	row := q.db.QueryRow(ctx, createWorkflowStateInput,
 		arg.ID,
@@ -610,11 +572,10 @@ func (q *Queries) CreateWorkflowStateInput(ctx context.Context, arg CreateWorkfl
 }
 
 const createWorkflowStateOutput = `-- name: CreateWorkflowStateOutput :one
-
 INSERT INTO workflow_state_output (
-    id, workflow_state_id, artifact_type, deleted_at
+  id, workflow_state_id, artifact_type
 )
-VALUES ($1,$2,$3,NULL)
+VALUES ($1,$2,$3)
 RETURNING id, workflow_state_id, artifact_type, deleted_at
 `
 
@@ -624,9 +585,6 @@ type CreateWorkflowStateOutputParams struct {
 	ArtifactType    string
 }
 
-// =========================
-// WORKFLOW STATE OUTPUT
-// =========================
 func (q *Queries) CreateWorkflowStateOutput(ctx context.Context, arg CreateWorkflowStateOutputParams) (WorkflowStateOutput, error) {
 	row := q.db.QueryRow(ctx, createWorkflowStateOutput, arg.ID, arg.WorkflowStateID, arg.ArtifactType)
 	var i WorkflowStateOutput
@@ -640,11 +598,10 @@ func (q *Queries) CreateWorkflowStateOutput(ctx context.Context, arg CreateWorkf
 }
 
 const createWorkflowTransition = `-- name: CreateWorkflowTransition :one
-
 INSERT INTO workflow_transition (
-    id, workflow_id, from_state, event_name, condition, to_state, deleted_at
+  id, workflow_id, from_state, event_name, condition, to_state
 )
-VALUES ($1,$2,$3,$4,$5,$6,NULL)
+VALUES ($1,$2,$3,$4,$5,$6)
 RETURNING id, workflow_id, from_state, event_name, condition, to_state, deleted_at
 `
 
@@ -657,9 +614,6 @@ type CreateWorkflowTransitionParams struct {
 	ToState    pgtype.Text
 }
 
-// =========================
-// WORKFLOW TRANSITION
-// =========================
 func (q *Queries) CreateWorkflowTransition(ctx context.Context, arg CreateWorkflowTransitionParams) (WorkflowTransition, error) {
 	row := q.db.QueryRow(ctx, createWorkflowTransition,
 		arg.ID,
@@ -684,7 +638,7 @@ func (q *Queries) CreateWorkflowTransition(ctx context.Context, arg CreateWorkfl
 
 const deleteAgent = `-- name: DeleteAgent :exec
 UPDATE agent
-SET deleted_at = NOW()
+SET deleted_at = now()
 WHERE id = $1
 `
 
@@ -695,7 +649,7 @@ func (q *Queries) DeleteAgent(ctx context.Context, id pgtype.UUID) error {
 
 const deleteAgentRun = `-- name: DeleteAgentRun :exec
 UPDATE agent_run
-SET deleted_at = NOW()
+SET deleted_at = now()
 WHERE id = $1
 `
 
@@ -706,7 +660,7 @@ func (q *Queries) DeleteAgentRun(ctx context.Context, id pgtype.UUID) error {
 
 const deleteApproval = `-- name: DeleteApproval :exec
 UPDATE approval
-SET deleted_at = NOW()
+SET deleted_at = now()
 WHERE id = $1
 `
 
@@ -717,7 +671,7 @@ func (q *Queries) DeleteApproval(ctx context.Context, id pgtype.UUID) error {
 
 const deleteArtifact = `-- name: DeleteArtifact :exec
 UPDATE artifact
-SET deleted_at = NOW()
+SET deleted_at = now()
 WHERE id = $1
 `
 
@@ -726,9 +680,53 @@ func (q *Queries) DeleteArtifact(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const deleteArtifactVersion = `-- name: DeleteArtifactVersion :exec
+UPDATE artifact_version
+SET deleted_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) DeleteArtifactVersion(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteArtifactVersion, id)
+	return err
+}
+
+const deleteAuditLog = `-- name: DeleteAuditLog :exec
+UPDATE audit_log
+SET deleted_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) DeleteAuditLog(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteAuditLog, id)
+	return err
+}
+
+const deleteExecutionState = `-- name: DeleteExecutionState :exec
+UPDATE workflow_execution_state
+SET deleted_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) DeleteExecutionState(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteExecutionState, id)
+	return err
+}
+
+const deleteMemoryChunk = `-- name: DeleteMemoryChunk :exec
+UPDATE memory_chunk
+SET deleted_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) DeleteMemoryChunk(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteMemoryChunk, id)
+	return err
+}
+
 const deleteProject = `-- name: DeleteProject :exec
 UPDATE project
-SET deleted_at = NOW()
+SET deleted_at = now()
 WHERE id = $1
 `
 
@@ -739,7 +737,7 @@ func (q *Queries) DeleteProject(ctx context.Context, id pgtype.UUID) error {
 
 const deleteWorkflow = `-- name: DeleteWorkflow :exec
 UPDATE workflow
-SET deleted_at = NOW()
+SET deleted_at = now()
 WHERE id = $1
 `
 
@@ -748,9 +746,20 @@ func (q *Queries) DeleteWorkflow(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const deleteWorkflowEvent = `-- name: DeleteWorkflowEvent :exec
+UPDATE workflow_event
+SET deleted_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) DeleteWorkflowEvent(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteWorkflowEvent, id)
+	return err
+}
+
 const deleteWorkflowExecution = `-- name: DeleteWorkflowExecution :exec
 UPDATE workflow_execution
-SET deleted_at = NOW()
+SET deleted_at = now()
 WHERE id = $1
 `
 
@@ -759,20 +768,9 @@ func (q *Queries) DeleteWorkflowExecution(ctx context.Context, id pgtype.UUID) e
 	return err
 }
 
-const deleteWorkflowExecutionState = `-- name: DeleteWorkflowExecutionState :exec
-UPDATE workflow_execution_state
-SET deleted_at = NOW()
-WHERE id = $1
-`
-
-func (q *Queries) DeleteWorkflowExecutionState(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteWorkflowExecutionState, id)
-	return err
-}
-
 const deleteWorkflowState = `-- name: DeleteWorkflowState :exec
 UPDATE workflow_state
-SET deleted_at = NOW()
+SET deleted_at = now()
 WHERE id = $1
 `
 
@@ -781,9 +779,31 @@ func (q *Queries) DeleteWorkflowState(ctx context.Context, id pgtype.UUID) error
 	return err
 }
 
+const deleteWorkflowStateInput = `-- name: DeleteWorkflowStateInput :exec
+UPDATE workflow_state_input
+SET deleted_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) DeleteWorkflowStateInput(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteWorkflowStateInput, id)
+	return err
+}
+
+const deleteWorkflowStateOutput = `-- name: DeleteWorkflowStateOutput :exec
+UPDATE workflow_state_output
+SET deleted_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) DeleteWorkflowStateOutput(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteWorkflowStateOutput, id)
+	return err
+}
+
 const deleteWorkflowTransition = `-- name: DeleteWorkflowTransition :exec
 UPDATE workflow_transition
-SET deleted_at = NOW()
+SET deleted_at = now()
 WHERE id = $1
 `
 
@@ -873,8 +893,90 @@ func (q *Queries) GetArtifactById(ctx context.Context, id pgtype.UUID) (Artifact
 	return i, err
 }
 
+const getArtifactVersionById = `-- name: GetArtifactVersionById :one
+SELECT id, artifact_id, version, storage_uri, checksum, metadata, created_at, deleted_at FROM artifact_version
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) GetArtifactVersionById(ctx context.Context, id pgtype.UUID) (ArtifactVersion, error) {
+	row := q.db.QueryRow(ctx, getArtifactVersionById, id)
+	var i ArtifactVersion
+	err := row.Scan(
+		&i.ID,
+		&i.ArtifactID,
+		&i.Version,
+		&i.StorageUri,
+		&i.Checksum,
+		&i.Metadata,
+		&i.CreatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getAuditLogById = `-- name: GetAuditLogById :one
+SELECT id, project_id, actor, action, payload, created_at, deleted_at FROM audit_log
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) GetAuditLogById(ctx context.Context, id pgtype.UUID) (AuditLog, error) {
+	row := q.db.QueryRow(ctx, getAuditLogById, id)
+	var i AuditLog
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Actor,
+		&i.Action,
+		&i.Payload,
+		&i.CreatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getExecutionStateById = `-- name: GetExecutionStateById :one
+SELECT id, execution_id, state_key, status, entered_at, exited_at, deleted_at FROM workflow_execution_state
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) GetExecutionStateById(ctx context.Context, id pgtype.UUID) (WorkflowExecutionState, error) {
+	row := q.db.QueryRow(ctx, getExecutionStateById, id)
+	var i WorkflowExecutionState
+	err := row.Scan(
+		&i.ID,
+		&i.ExecutionID,
+		&i.StateKey,
+		&i.Status,
+		&i.EnteredAt,
+		&i.ExitedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getMemoryChunkById = `-- name: GetMemoryChunkById :one
+SELECT id, artifact_version_id, chunk_index, content, embedding, metadata, deleted_at FROM memory_chunk
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) GetMemoryChunkById(ctx context.Context, id pgtype.UUID) (MemoryChunk, error) {
+	row := q.db.QueryRow(ctx, getMemoryChunkById, id)
+	var i MemoryChunk
+	err := row.Scan(
+		&i.ID,
+		&i.ArtifactVersionID,
+		&i.ChunkIndex,
+		&i.Content,
+		&i.Embedding,
+		&i.Metadata,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const getProjectById = `-- name: GetProjectById :one
-SELECT id, name, description, workflow_id, workflow_version, status, created_at, updated_at, deleted_at FROM project
+SELECT id, name, description, workflow_id, workflow_version, status, created_at, updated_at, deleted_at
+FROM project
 WHERE id = $1 AND deleted_at IS NULL
 `
 
@@ -915,6 +1017,25 @@ func (q *Queries) GetWorkflowById(ctx context.Context, id pgtype.UUID) (Workflow
 	return i, err
 }
 
+const getWorkflowEventById = `-- name: GetWorkflowEventById :one
+SELECT id, execution_id, event_name, payload, created_at, deleted_at FROM workflow_event
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) GetWorkflowEventById(ctx context.Context, id pgtype.UUID) (WorkflowEvent, error) {
+	row := q.db.QueryRow(ctx, getWorkflowEventById, id)
+	var i WorkflowEvent
+	err := row.Scan(
+		&i.ID,
+		&i.ExecutionID,
+		&i.EventName,
+		&i.Payload,
+		&i.CreatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const getWorkflowExecutionById = `-- name: GetWorkflowExecutionById :one
 SELECT id, project_id, workflow_id, current_state, status, started_at, finished_at, deleted_at FROM workflow_execution
 WHERE id = $1 AND deleted_at IS NULL
@@ -931,26 +1052,6 @@ func (q *Queries) GetWorkflowExecutionById(ctx context.Context, id pgtype.UUID) 
 		&i.Status,
 		&i.StartedAt,
 		&i.FinishedAt,
-		&i.DeletedAt,
-	)
-	return i, err
-}
-
-const getWorkflowExecutionStateById = `-- name: GetWorkflowExecutionStateById :one
-SELECT id, execution_id, state_key, status, entered_at, exited_at, deleted_at FROM workflow_execution_state
-WHERE id = $1 AND deleted_at IS NULL
-`
-
-func (q *Queries) GetWorkflowExecutionStateById(ctx context.Context, id pgtype.UUID) (WorkflowExecutionState, error) {
-	row := q.db.QueryRow(ctx, getWorkflowExecutionStateById, id)
-	var i WorkflowExecutionState
-	err := row.Scan(
-		&i.ID,
-		&i.ExecutionID,
-		&i.StateKey,
-		&i.Status,
-		&i.EnteredAt,
-		&i.ExitedAt,
 		&i.DeletedAt,
 	)
 	return i, err
@@ -978,6 +1079,41 @@ func (q *Queries) GetWorkflowStateById(ctx context.Context, id pgtype.UUID) (Wor
 	return i, err
 }
 
+const getWorkflowStateInputById = `-- name: GetWorkflowStateInputById :one
+SELECT id, workflow_state_id, artifact_type, required, deleted_at FROM workflow_state_input
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) GetWorkflowStateInputById(ctx context.Context, id pgtype.UUID) (WorkflowStateInput, error) {
+	row := q.db.QueryRow(ctx, getWorkflowStateInputById, id)
+	var i WorkflowStateInput
+	err := row.Scan(
+		&i.ID,
+		&i.WorkflowStateID,
+		&i.ArtifactType,
+		&i.Required,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getWorkflowStateOutputById = `-- name: GetWorkflowStateOutputById :one
+SELECT id, workflow_state_id, artifact_type, deleted_at FROM workflow_state_output
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+func (q *Queries) GetWorkflowStateOutputById(ctx context.Context, id pgtype.UUID) (WorkflowStateOutput, error) {
+	row := q.db.QueryRow(ctx, getWorkflowStateOutputById, id)
+	var i WorkflowStateOutput
+	err := row.Scan(
+		&i.ID,
+		&i.WorkflowStateID,
+		&i.ArtifactType,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const getWorkflowTransitionById = `-- name: GetWorkflowTransitionById :one
 SELECT id, workflow_id, from_state, event_name, condition, to_state, deleted_at FROM workflow_transition
 WHERE id = $1 AND deleted_at IS NULL
@@ -999,10 +1135,15 @@ func (q *Queries) GetWorkflowTransitionById(ctx context.Context, id pgtype.UUID)
 }
 
 const listAgentRuns = `-- name: ListAgentRuns :many
+
 SELECT id, execution_state_id, agent_id, status, input, output, started_at, finished_at, deleted_at FROM agent_run
-WHERE execution_state_id = $1 AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+AND execution_state_id = $1
 `
 
+// =========================
+// AGENT RUN
+// =========================
 func (q *Queries) ListAgentRuns(ctx context.Context, executionStateID pgtype.UUID) ([]AgentRun, error) {
 	rows, err := q.db.Query(ctx, listAgentRuns, executionStateID)
 	if err != nil {
@@ -1034,10 +1175,14 @@ func (q *Queries) ListAgentRuns(ctx context.Context, executionStateID pgtype.UUI
 }
 
 const listAgents = `-- name: ListAgents :many
+
 SELECT id, name, endpoint, type, active, deleted_at FROM agent
 WHERE deleted_at IS NULL
 `
 
+// =========================
+// AGENT
+// =========================
 func (q *Queries) ListAgents(ctx context.Context) ([]Agent, error) {
 	rows, err := q.db.Query(ctx, listAgents)
 	if err != nil {
@@ -1065,11 +1210,54 @@ func (q *Queries) ListAgents(ctx context.Context) ([]Agent, error) {
 	return items, nil
 }
 
-const listArtifactVersions = `-- name: ListArtifactVersions :many
-SELECT id, artifact_id, version, storage_uri, checksum, metadata, created_at, deleted_at FROM artifact_version
-WHERE artifact_id = $1 AND deleted_at IS NULL
+const listApprovals = `-- name: ListApprovals :many
+
+SELECT id, execution_state_id, status, reviewer, comment, approved_at, deleted_at FROM approval
+WHERE deleted_at IS NULL
+AND execution_state_id = $1
 `
 
+// =========================
+// APPROVAL
+// =========================
+func (q *Queries) ListApprovals(ctx context.Context, executionStateID pgtype.UUID) ([]Approval, error) {
+	rows, err := q.db.Query(ctx, listApprovals, executionStateID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Approval
+	for rows.Next() {
+		var i Approval
+		if err := rows.Scan(
+			&i.ID,
+			&i.ExecutionStateID,
+			&i.Status,
+			&i.Reviewer,
+			&i.Comment,
+			&i.ApprovedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listArtifactVersions = `-- name: ListArtifactVersions :many
+
+SELECT id, artifact_id, version, storage_uri, checksum, metadata, created_at, deleted_at FROM artifact_version
+WHERE deleted_at IS NULL
+AND artifact_id = $1
+`
+
+// =========================
+// ARTIFACT VERSION
+// =========================
 func (q *Queries) ListArtifactVersions(ctx context.Context, artifactID pgtype.UUID) ([]ArtifactVersion, error) {
 	rows, err := q.db.Query(ctx, listArtifactVersions, artifactID)
 	if err != nil {
@@ -1100,10 +1288,15 @@ func (q *Queries) ListArtifactVersions(ctx context.Context, artifactID pgtype.UU
 }
 
 const listArtifacts = `-- name: ListArtifacts :many
+
 SELECT id, project_id, type, name, latest_version, created_at, deleted_at FROM artifact
-WHERE project_id = $1 AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+AND project_id = $1
 `
 
+// =========================
+// ARTIFACT
+// =========================
 func (q *Queries) ListArtifacts(ctx context.Context, projectID pgtype.UUID) ([]Artifact, error) {
 	rows, err := q.db.Query(ctx, listArtifacts, projectID)
 	if err != nil {
@@ -1133,11 +1326,16 @@ func (q *Queries) ListArtifacts(ctx context.Context, projectID pgtype.UUID) ([]A
 }
 
 const listAuditLogs = `-- name: ListAuditLogs :many
+
 SELECT id, project_id, actor, action, payload, created_at, deleted_at FROM audit_log
-WHERE project_id = $1 AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+AND project_id = $1
 ORDER BY created_at DESC
 `
 
+// =========================
+// AUDIT LOG
+// =========================
 func (q *Queries) ListAuditLogs(ctx context.Context, projectID pgtype.UUID) ([]AuditLog, error) {
 	rows, err := q.db.Query(ctx, listAuditLogs, projectID)
 	if err != nil {
@@ -1166,11 +1364,54 @@ func (q *Queries) ListAuditLogs(ctx context.Context, projectID pgtype.UUID) ([]A
 	return items, nil
 }
 
-const listMemoryChunks = `-- name: ListMemoryChunks :many
-SELECT id, artifact_version_id, chunk_index, content, embedding, metadata, deleted_at FROM memory_chunk
-WHERE artifact_version_id = $1 AND deleted_at IS NULL
+const listExecutionStates = `-- name: ListExecutionStates :many
+
+SELECT id, execution_id, state_key, status, entered_at, exited_at, deleted_at FROM workflow_execution_state
+WHERE deleted_at IS NULL
+AND execution_id = $1
 `
 
+// =========================
+// WORKFLOW EXECUTION STATE
+// =========================
+func (q *Queries) ListExecutionStates(ctx context.Context, executionID pgtype.UUID) ([]WorkflowExecutionState, error) {
+	rows, err := q.db.Query(ctx, listExecutionStates, executionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WorkflowExecutionState
+	for rows.Next() {
+		var i WorkflowExecutionState
+		if err := rows.Scan(
+			&i.ID,
+			&i.ExecutionID,
+			&i.StateKey,
+			&i.Status,
+			&i.EnteredAt,
+			&i.ExitedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMemoryChunks = `-- name: ListMemoryChunks :many
+
+SELECT id, artifact_version_id, chunk_index, content, embedding, metadata, deleted_at FROM memory_chunk
+WHERE deleted_at IS NULL
+AND artifact_version_id = $1
+`
+
+// =========================
+// MEMORY CHUNK
+// =========================
 func (q *Queries) ListMemoryChunks(ctx context.Context, artifactVersionID pgtype.UUID) ([]MemoryChunk, error) {
 	rows, err := q.db.Query(ctx, listMemoryChunks, artifactVersionID)
 	if err != nil {
@@ -1200,11 +1441,16 @@ func (q *Queries) ListMemoryChunks(ctx context.Context, artifactVersionID pgtype
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, name, description, workflow_id, workflow_version, status, created_at, updated_at, deleted_at FROM project
+
+SELECT id, name, description, workflow_id, workflow_version, status, created_at, updated_at, deleted_at
+FROM project
 WHERE deleted_at IS NULL
 ORDER BY created_at DESC
 `
 
+// =========================
+// PROJECT
+// =========================
 func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 	rows, err := q.db.Query(ctx, listProjects)
 	if err != nil {
@@ -1236,11 +1482,15 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 }
 
 const listWorkflowEvents = `-- name: ListWorkflowEvents :many
+
 SELECT id, execution_id, event_name, payload, created_at, deleted_at FROM workflow_event
-WHERE execution_id = $1 AND deleted_at IS NULL
-ORDER BY created_at DESC
+WHERE deleted_at IS NULL
+AND execution_id = $1
 `
 
+// =========================
+// WORKFLOW EVENT
+// =========================
 func (q *Queries) ListWorkflowEvents(ctx context.Context, executionID pgtype.UUID) ([]WorkflowEvent, error) {
 	rows, err := q.db.Query(ctx, listWorkflowEvents, executionID)
 	if err != nil {
@@ -1268,44 +1518,16 @@ func (q *Queries) ListWorkflowEvents(ctx context.Context, executionID pgtype.UUI
 	return items, nil
 }
 
-const listWorkflowExecutionStates = `-- name: ListWorkflowExecutionStates :many
-SELECT id, execution_id, state_key, status, entered_at, exited_at, deleted_at FROM workflow_execution_state
-WHERE execution_id = $1 AND deleted_at IS NULL
-`
-
-func (q *Queries) ListWorkflowExecutionStates(ctx context.Context, executionID pgtype.UUID) ([]WorkflowExecutionState, error) {
-	rows, err := q.db.Query(ctx, listWorkflowExecutionStates, executionID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []WorkflowExecutionState
-	for rows.Next() {
-		var i WorkflowExecutionState
-		if err := rows.Scan(
-			&i.ID,
-			&i.ExecutionID,
-			&i.StateKey,
-			&i.Status,
-			&i.EnteredAt,
-			&i.ExitedAt,
-			&i.DeletedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listWorkflowExecutions = `-- name: ListWorkflowExecutions :many
+
 SELECT id, project_id, workflow_id, current_state, status, started_at, finished_at, deleted_at FROM workflow_execution
-WHERE project_id = $1 AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+AND project_id = $1
 `
 
+// =========================
+// WORKFLOW EXECUTION
+// =========================
 func (q *Queries) ListWorkflowExecutions(ctx context.Context, projectID pgtype.UUID) ([]WorkflowExecution, error) {
 	rows, err := q.db.Query(ctx, listWorkflowExecutions, projectID)
 	if err != nil {
@@ -1336,10 +1558,15 @@ func (q *Queries) ListWorkflowExecutions(ctx context.Context, projectID pgtype.U
 }
 
 const listWorkflowStateInputs = `-- name: ListWorkflowStateInputs :many
+
 SELECT id, workflow_state_id, artifact_type, required, deleted_at FROM workflow_state_input
-WHERE workflow_state_id = $1 AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+AND workflow_state_id = $1
 `
 
+// =========================
+// WORKFLOW STATE INPUT
+// =========================
 func (q *Queries) ListWorkflowStateInputs(ctx context.Context, workflowStateID pgtype.UUID) ([]WorkflowStateInput, error) {
 	rows, err := q.db.Query(ctx, listWorkflowStateInputs, workflowStateID)
 	if err != nil {
@@ -1367,10 +1594,15 @@ func (q *Queries) ListWorkflowStateInputs(ctx context.Context, workflowStateID p
 }
 
 const listWorkflowStateOutputs = `-- name: ListWorkflowStateOutputs :many
+
 SELECT id, workflow_state_id, artifact_type, deleted_at FROM workflow_state_output
-WHERE workflow_state_id = $1 AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+AND workflow_state_id = $1
 `
 
+// =========================
+// WORKFLOW STATE OUTPUT
+// =========================
 func (q *Queries) ListWorkflowStateOutputs(ctx context.Context, workflowStateID pgtype.UUID) ([]WorkflowStateOutput, error) {
 	rows, err := q.db.Query(ctx, listWorkflowStateOutputs, workflowStateID)
 	if err != nil {
@@ -1397,10 +1629,15 @@ func (q *Queries) ListWorkflowStateOutputs(ctx context.Context, workflowStateID 
 }
 
 const listWorkflowStates = `-- name: ListWorkflowStates :many
+
 SELECT id, workflow_id, state_key, state_name, agent_name, timeout_seconds, retry_limit, is_terminal, deleted_at FROM workflow_state
-WHERE workflow_id = $1 AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+AND workflow_id = $1
 `
 
+// =========================
+// WORKFLOW STATE
+// =========================
 func (q *Queries) ListWorkflowStates(ctx context.Context, workflowID pgtype.UUID) ([]WorkflowState, error) {
 	rows, err := q.db.Query(ctx, listWorkflowStates, workflowID)
 	if err != nil {
@@ -1432,10 +1669,15 @@ func (q *Queries) ListWorkflowStates(ctx context.Context, workflowID pgtype.UUID
 }
 
 const listWorkflowTransitions = `-- name: ListWorkflowTransitions :many
+
 SELECT id, workflow_id, from_state, event_name, condition, to_state, deleted_at FROM workflow_transition
-WHERE workflow_id = $1 AND deleted_at IS NULL
+WHERE deleted_at IS NULL
+AND workflow_id = $1
 `
 
+// =========================
+// WORKFLOW TRANSITION
+// =========================
 func (q *Queries) ListWorkflowTransitions(ctx context.Context, workflowID pgtype.UUID) ([]WorkflowTransition, error) {
 	rows, err := q.db.Query(ctx, listWorkflowTransitions, workflowID)
 	if err != nil {
@@ -1465,11 +1707,14 @@ func (q *Queries) ListWorkflowTransitions(ctx context.Context, workflowID pgtype
 }
 
 const listWorkflows = `-- name: ListWorkflows :many
+
 SELECT id, name, version, start_state, active, created_at, deleted_at FROM workflow
 WHERE deleted_at IS NULL
-ORDER BY created_at DESC
 `
 
+// =========================
+// WORKFLOW
+// =========================
 func (q *Queries) ListWorkflows(ctx context.Context) ([]Workflow, error) {
 	rows, err := q.db.Query(ctx, listWorkflows)
 	if err != nil {
@@ -1501,10 +1746,10 @@ func (q *Queries) ListWorkflows(ctx context.Context) ([]Workflow, error) {
 const updateAgent = `-- name: UpdateAgent :one
 UPDATE agent
 SET
-    name = $2,
-    endpoint = $3,
-    type = $4,
-    active = $5
+  name = $2,
+  endpoint = $3,
+  type = $4,
+  active = $5
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, name, endpoint, type, active, deleted_at
 `
@@ -1540,9 +1785,11 @@ func (q *Queries) UpdateAgent(ctx context.Context, arg UpdateAgentParams) (Agent
 const updateAgentRun = `-- name: UpdateAgentRun :one
 UPDATE agent_run
 SET
-    status = $2,
-    output = $3,
-    finished_at = $4
+  status = $2,
+  input = $3,
+  output = $4,
+  started_at = $5,
+  finished_at = $6
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, execution_state_id, agent_id, status, input, output, started_at, finished_at, deleted_at
 `
@@ -1550,7 +1797,9 @@ RETURNING id, execution_state_id, agent_id, status, input, output, started_at, f
 type UpdateAgentRunParams struct {
 	ID         pgtype.UUID
 	Status     pgtype.Text
+	Input      []byte
 	Output     []byte
+	StartedAt  pgtype.Timestamptz
 	FinishedAt pgtype.Timestamptz
 }
 
@@ -1558,7 +1807,9 @@ func (q *Queries) UpdateAgentRun(ctx context.Context, arg UpdateAgentRunParams) 
 	row := q.db.QueryRow(ctx, updateAgentRun,
 		arg.ID,
 		arg.Status,
+		arg.Input,
 		arg.Output,
+		arg.StartedAt,
 		arg.FinishedAt,
 	)
 	var i AgentRun
@@ -1579,10 +1830,10 @@ func (q *Queries) UpdateAgentRun(ctx context.Context, arg UpdateAgentRunParams) 
 const updateApproval = `-- name: UpdateApproval :one
 UPDATE approval
 SET
-    status = $2,
-    reviewer = $3,
-    comment = $4,
-    approved_at = $5
+  status = $2,
+  reviewer = $3,
+  comment = $4,
+  approved_at = $5
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, execution_state_id, status, reviewer, comment, approved_at, deleted_at
 `
@@ -1619,9 +1870,9 @@ func (q *Queries) UpdateApproval(ctx context.Context, arg UpdateApprovalParams) 
 const updateArtifact = `-- name: UpdateArtifact :one
 UPDATE artifact
 SET
-    type = $2,
-    name = $3,
-    latest_version = $4
+  type = $2,
+  name = $3,
+  latest_version = $4
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, project_id, type, name, latest_version, created_at, deleted_at
 `
@@ -1653,15 +1904,55 @@ func (q *Queries) UpdateArtifact(ctx context.Context, arg UpdateArtifactParams) 
 	return i, err
 }
 
+const updateExecutionState = `-- name: UpdateExecutionState :one
+UPDATE workflow_execution_state
+SET
+  state_key = $2,
+  status = $3,
+  entered_at = $4,
+  exited_at = $5
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, execution_id, state_key, status, entered_at, exited_at, deleted_at
+`
+
+type UpdateExecutionStateParams struct {
+	ID        pgtype.UUID
+	StateKey  pgtype.Text
+	Status    pgtype.Text
+	EnteredAt pgtype.Timestamptz
+	ExitedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) UpdateExecutionState(ctx context.Context, arg UpdateExecutionStateParams) (WorkflowExecutionState, error) {
+	row := q.db.QueryRow(ctx, updateExecutionState,
+		arg.ID,
+		arg.StateKey,
+		arg.Status,
+		arg.EnteredAt,
+		arg.ExitedAt,
+	)
+	var i WorkflowExecutionState
+	err := row.Scan(
+		&i.ID,
+		&i.ExecutionID,
+		&i.StateKey,
+		&i.Status,
+		&i.EnteredAt,
+		&i.ExitedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const updateProject = `-- name: UpdateProject :one
 UPDATE project
 SET
-    name = $2,
-    description = $3,
-    workflow_id = $4,
-    workflow_version = $5,
-    status = $6,
-    updated_at = NOW()
+  name = $2,
+  description = $3,
+  workflow_id = $4,
+  workflow_version = $5,
+  status = $6,
+  updated_at = $7
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, name, description, workflow_id, workflow_version, status, created_at, updated_at, deleted_at
 `
@@ -1673,6 +1964,7 @@ type UpdateProjectParams struct {
 	WorkflowID      pgtype.UUID
 	WorkflowVersion pgtype.Int4
 	Status          pgtype.Text
+	UpdatedAt       pgtype.Timestamptz
 }
 
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (Project, error) {
@@ -1683,6 +1975,7 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 		arg.WorkflowID,
 		arg.WorkflowVersion,
 		arg.Status,
+		arg.UpdatedAt,
 	)
 	var i Project
 	err := row.Scan(
@@ -1702,10 +1995,10 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 const updateWorkflow = `-- name: UpdateWorkflow :one
 UPDATE workflow
 SET
-    name = $2,
-    version = $3,
-    start_state = $4,
-    active = $5
+  name = $2,
+  version = $3,
+  start_state = $4,
+  active = $5
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, name, version, start_state, active, created_at, deleted_at
 `
@@ -1742,9 +2035,10 @@ func (q *Queries) UpdateWorkflow(ctx context.Context, arg UpdateWorkflowParams) 
 const updateWorkflowExecution = `-- name: UpdateWorkflowExecution :one
 UPDATE workflow_execution
 SET
-    current_state = $2,
-    status = $3,
-    finished_at = $4
+  current_state = $2,
+  status = $3,
+  started_at = $4,
+  finished_at = $5
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, project_id, workflow_id, current_state, status, started_at, finished_at, deleted_at
 `
@@ -1753,6 +2047,7 @@ type UpdateWorkflowExecutionParams struct {
 	ID           pgtype.UUID
 	CurrentState pgtype.Text
 	Status       pgtype.Text
+	StartedAt    pgtype.Timestamptz
 	FinishedAt   pgtype.Timestamptz
 }
 
@@ -1761,6 +2056,7 @@ func (q *Queries) UpdateWorkflowExecution(ctx context.Context, arg UpdateWorkflo
 		arg.ID,
 		arg.CurrentState,
 		arg.Status,
+		arg.StartedAt,
 		arg.FinishedAt,
 	)
 	var i WorkflowExecution
@@ -1777,45 +2073,15 @@ func (q *Queries) UpdateWorkflowExecution(ctx context.Context, arg UpdateWorkflo
 	return i, err
 }
 
-const updateWorkflowExecutionState = `-- name: UpdateWorkflowExecutionState :one
-UPDATE workflow_execution_state
-SET
-    status = $2,
-    exited_at = $3
-WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, execution_id, state_key, status, entered_at, exited_at, deleted_at
-`
-
-type UpdateWorkflowExecutionStateParams struct {
-	ID       pgtype.UUID
-	Status   pgtype.Text
-	ExitedAt pgtype.Timestamptz
-}
-
-func (q *Queries) UpdateWorkflowExecutionState(ctx context.Context, arg UpdateWorkflowExecutionStateParams) (WorkflowExecutionState, error) {
-	row := q.db.QueryRow(ctx, updateWorkflowExecutionState, arg.ID, arg.Status, arg.ExitedAt)
-	var i WorkflowExecutionState
-	err := row.Scan(
-		&i.ID,
-		&i.ExecutionID,
-		&i.StateKey,
-		&i.Status,
-		&i.EnteredAt,
-		&i.ExitedAt,
-		&i.DeletedAt,
-	)
-	return i, err
-}
-
 const updateWorkflowState = `-- name: UpdateWorkflowState :one
 UPDATE workflow_state
 SET
-    state_key = $2,
-    state_name = $3,
-    agent_name = $4,
-    timeout_seconds = $5,
-    retry_limit = $6,
-    is_terminal = $7
+  state_key = $2,
+  state_name = $3,
+  agent_name = $4,
+  timeout_seconds = $5,
+  retry_limit = $6,
+  is_terminal = $7
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, workflow_id, state_key, state_name, agent_name, timeout_seconds, retry_limit, is_terminal, deleted_at
 `
@@ -1855,13 +2121,66 @@ func (q *Queries) UpdateWorkflowState(ctx context.Context, arg UpdateWorkflowSta
 	return i, err
 }
 
+const updateWorkflowStateInput = `-- name: UpdateWorkflowStateInput :one
+UPDATE workflow_state_input
+SET
+  artifact_type = $2,
+  required = $3
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, workflow_state_id, artifact_type, required, deleted_at
+`
+
+type UpdateWorkflowStateInputParams struct {
+	ID           pgtype.UUID
+	ArtifactType string
+	Required     pgtype.Bool
+}
+
+func (q *Queries) UpdateWorkflowStateInput(ctx context.Context, arg UpdateWorkflowStateInputParams) (WorkflowStateInput, error) {
+	row := q.db.QueryRow(ctx, updateWorkflowStateInput, arg.ID, arg.ArtifactType, arg.Required)
+	var i WorkflowStateInput
+	err := row.Scan(
+		&i.ID,
+		&i.WorkflowStateID,
+		&i.ArtifactType,
+		&i.Required,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const updateWorkflowStateOutput = `-- name: UpdateWorkflowStateOutput :one
+UPDATE workflow_state_output
+SET
+  artifact_type = $2
+WHERE id = $1 AND deleted_at IS NULL
+RETURNING id, workflow_state_id, artifact_type, deleted_at
+`
+
+type UpdateWorkflowStateOutputParams struct {
+	ID           pgtype.UUID
+	ArtifactType string
+}
+
+func (q *Queries) UpdateWorkflowStateOutput(ctx context.Context, arg UpdateWorkflowStateOutputParams) (WorkflowStateOutput, error) {
+	row := q.db.QueryRow(ctx, updateWorkflowStateOutput, arg.ID, arg.ArtifactType)
+	var i WorkflowStateOutput
+	err := row.Scan(
+		&i.ID,
+		&i.WorkflowStateID,
+		&i.ArtifactType,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const updateWorkflowTransition = `-- name: UpdateWorkflowTransition :one
 UPDATE workflow_transition
 SET
-    from_state = $2,
-    event_name = $3,
-    condition = $4,
-    to_state = $5
+  from_state = $2,
+  event_name = $3,
+  condition = $4,
+  to_state = $5
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, workflow_id, from_state, event_name, condition, to_state, deleted_at
 `
