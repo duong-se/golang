@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -17,8 +16,10 @@ func run() error {
 	return nil
 }
 
-func main() {
-	if err := run(); err != nil {
-		log.Fatal(err)
-	}
-}
+// func main() {
+// 	if err := run(); err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	fmt.Println("Comprehensive Agent (Go)")
+// 	fmt.Println()
+// }

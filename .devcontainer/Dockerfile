@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
 RUN chmod +x /usr/local/bin/dbmate
+RUN curl -fsSL https://opencode.ai/install | bash
 
 ENV GO111MODULE=on
 
