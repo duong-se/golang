@@ -2,11 +2,20 @@ package tools
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 )
 
-var WORKDIR = "/workspace"
+var WORKDIR string
+
+func init() {
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	WORKDIR = cwd
+}
 
 func SafePath(p string) (string, error) {
 	base, err := filepath.Abs(WORKDIR)

@@ -55,7 +55,7 @@ func main() {
 	// 2. OpenRouter provider (OpenAI compatible)
 	p := &providers.OpenRouterProvider{
 		APIKey: os.Getenv("OPENROUTER_API_KEY"),
-		Model:  "openai/gpt-4o-mini",
+		Model:  "openrouter/free",
 	}
 
 	// 3. agent init

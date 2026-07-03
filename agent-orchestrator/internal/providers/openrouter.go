@@ -3,6 +3,9 @@ package providers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/duong-se/golang/agent-orchestrator/internal/agent"
@@ -43,20 +46,38 @@ func (o *OpenRouterProvider) Generate(req agent.AgentRequest) (agent.AgentRespon
 	}
 	defer res.Body.Close()
 
-	var parsed struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
+	// var parsed struct {
+	// 	Choices []struct {
+	// 		Message struct {
+	// 			Role     string `json:"role"`
+	// 			Content  string `json:"content"`
+	// 			ToolCall string `json:"tool_calls"`
+	// 		} `json:"message"`
+	// 	} `json:"choices"`
+	// }
+
+	var parsed map[string]interface{}
+
+	if res.StatusCode != 200 {
+		bodyBytes, _ := io.ReadAll(res.Body)
+		fmt.Println("ERROR:", string(bodyBytes))
+		return agent.AgentResponse{}, errors.New(string(bodyBytes))
 	}
 
 	json.NewDecoder(res.Body).Decode(&parsed)
-
+	fmt.Println(parsed, "<<<<<=====")
+	// if len(parsed.Choices) < 1 {
+	// 	return agent.AgentResponse{
+	// 		Message: agent.Message{
+	// 			Role:    agent.Assistant,
+	// 			Content: "",
+	// 		},
+	// 	}, nil
+	// }
 	return agent.AgentResponse{
 		Message: agent.Message{
 			Role:    agent.Assistant,
-			Content: parsed.Choices[0].Message.Content,
+			Content: "",
 		},
 	}, nil
 }

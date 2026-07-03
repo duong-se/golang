@@ -24,9 +24,17 @@ type AgentRequest struct {
 	MaxTokens   int       `json:"max_tokens,omitempty"`
 }
 
+type AgentResponseContent struct {
+	Type  string `json:"type"`
+	Name  string `json:"name"`
+	Input string `json:"input"`
+}
+
 type AgentResponse struct {
-	Message Message `json:"message"`
-	Raw     any     `json:"raw,omitempty"`
+	Message    Message              `json:"message"`
+	StopReason string               `json:"stop_reason"`
+	Content    AgentResponseContent `json:"content"`
+	// Raw        any     `json:"raw,omitempty"`
 }
 
 type Provider interface {
@@ -96,7 +104,13 @@ func (a *agentImpl) Run(initial []Message) ([]Message, error) {
 		if err != nil {
 			return nil, err
 		}
-		messages = append(messages, resp.Message)
+		messages = append(messages, Message{
+			Role:    resp.Message.Role,
+			Content: resp.Message.Content,
+		})
+		if resp.StopReason != "tool_use" {
+			return nil, nil
+		}
 		toolMsg, err := a.handleTools(resp)
 		if err != nil {
 			return nil, err
