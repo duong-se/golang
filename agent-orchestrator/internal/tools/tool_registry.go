@@ -1,5 +1,7 @@
 package tools
 
+import "encoding/json"
+
 type ToolFunc func(args map[string]any) (string, error)
 
 type toolRegistryImpl struct {
@@ -22,4 +24,10 @@ func (r *toolRegistryImpl) Execute(name string, args map[string]any) (string, er
 		return "", nil
 	}
 	return fn(args)
+}
+
+func ParseArgs(raw string) (map[string]any, error) {
+	var m map[string]any
+	err := json.Unmarshal([]byte(raw), &m)
+	return m, err
 }

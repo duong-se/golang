@@ -1,5 +1,7 @@
 package agent
 
+import "github.com/duong-se/golang/agent-orchestrator/internal/tools"
+
 type Role string
 
 const (
@@ -33,7 +35,8 @@ type Provider interface {
 }
 
 type ToolCall struct {
-	Command string `json:"command"`
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
 }
 
 type agentImpl struct {
@@ -44,10 +47,10 @@ type agentImpl struct {
 }
 
 type ToolRegistry interface {
-	Execute(command string) (string, error)
+	Execute(name string, args map[string]any) (string, error)
 }
 
-func New(uuid string, model string, tools ToolRegistry, provider Provider) *agentImpl {
+func New(uuid string, tools ToolRegistry, provider Provider) *agentImpl {
 	return &agentImpl{
 		UUID:     uuid,
 		Tools:    tools,
@@ -65,12 +68,17 @@ func (a *agentImpl) handleTools(resp AgentResponse) (*Message, error) {
 	}
 	results := ""
 	for _, call := range resp.Message.ToolCalls {
-		out, err := a.Tools.Execute(call.Command)
+		args, err := tools.ParseArgs(call.Arguments)
 		if err != nil {
-			results += call.Command + ": error\n"
+			results += "[tool parse error]\n"
 			continue
 		}
-		results += call.Command + ": " + out + "\n"
+		out, err := a.Tools.Execute(call.Name, args)
+		if err != nil {
+			results += call.Name + ": error\n"
+			continue
+		}
+		results += call.Name + ": " + out + "\n"
 	}
 
 	return &Message{
