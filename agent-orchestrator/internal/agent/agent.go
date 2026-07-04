@@ -1,6 +1,10 @@
 package agent
 
-import "github.com/duong-se/golang/agent-orchestrator/internal/tools"
+import (
+	"fmt"
+
+	"github.com/duong-se/golang/agent-orchestrator/internal/tools"
+)
 
 type Role string
 
@@ -43,6 +47,7 @@ type Provider interface {
 }
 
 type ToolCall struct {
+	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
 }
@@ -71,6 +76,7 @@ func (a *agentImpl) isDone(resp AgentResponse) bool {
 }
 
 func (a *agentImpl) handleTools(resp AgentResponse) (*Message, error) {
+	fmt.Println(resp.Message.ToolCalls, "<<<<<<<<<")
 	if len(resp.Message.ToolCalls) == 0 {
 		return nil, nil
 	}

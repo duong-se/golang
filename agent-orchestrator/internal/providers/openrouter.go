@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/duong-se/golang/agent-orchestrator/internal/agent"
 )
@@ -14,6 +16,73 @@ import (
 type OpenRouterProvider struct {
 	APIKey string
 	Model  string
+}
+
+var (
+	toolBlockRe = regexp.MustCompile(`(?s)<tool_call>(.*?)</tool_call>`)
+	argRe       = regexp.MustCompile(`(?s)<arg_key>(.*?)</arg_key>\s*<arg_value>(.*?)</arg_value>`)
+)
+
+// ParseToolCalls parses XML-like tool calls returned by some OpenRouter models.
+//
+// Example:
+//
+//	<tool_call>shell
+//	<arg_key>command</arg_key>
+//	<arg_value>echo hello</arg_value>
+//	<arg_key>description</arg_key>
+//	<arg_value>Create file</arg_value>
+//	</tool_call>
+func ParseToolCalls(content string) ([]agent.ToolCall, string) {
+	matches := toolBlockRe.FindAllStringSubmatch(content, -1)
+
+	if len(matches) == 0 {
+		return nil, strings.TrimSpace(content)
+	}
+
+	var toolCalls []agent.ToolCall
+
+	for _, match := range matches {
+		block := strings.TrimSpace(match[1])
+
+		lines := strings.Split(block, "\n")
+		if len(lines) == 0 {
+			continue
+		}
+
+		toolName := strings.TrimSpace(lines[0])
+
+		args := make(map[string]any)
+
+		argMatches := argRe.FindAllStringSubmatch(block, -1)
+
+		for _, arg := range argMatches {
+			if len(arg) != 3 {
+				continue
+			}
+
+			key := strings.TrimSpace(arg[1])
+			value := strings.TrimSpace(arg[2])
+
+			args[key] = value
+		}
+
+		argsJSON, err := json.Marshal(args)
+		if err != nil {
+			return toolCalls, content
+		}
+
+		toolCalls = append(toolCalls, agent.ToolCall{
+			Name:      toolName,
+			Arguments: string(argsJSON),
+		})
+	}
+
+	// Remove tool blocks from assistant message.
+	clean := toolBlockRe.ReplaceAllString(content, "")
+	clean = strings.TrimSpace(clean)
+
+	return toolCalls, clean
 }
 
 func (o *OpenRouterProvider) Name() string {
@@ -56,8 +125,7 @@ func (o *OpenRouterProvider) Generate(req agent.AgentRequest) (agent.AgentRespon
 	// 	} `json:"choices"`
 	// }
 
-	var parsed map[string]interface{}
-
+	var parsed = map[string]interface{}{}
 	if res.StatusCode != 200 {
 		bodyBytes, _ := io.ReadAll(res.Body)
 		fmt.Println("ERROR:", string(bodyBytes))
@@ -65,19 +133,20 @@ func (o *OpenRouterProvider) Generate(req agent.AgentRequest) (agent.AgentRespon
 	}
 
 	json.NewDecoder(res.Body).Decode(&parsed)
-	fmt.Println(parsed, "<<<<<=====")
-	// if len(parsed.Choices) < 1 {
-	// 	return agent.AgentResponse{
-	// 		Message: agent.Message{
-	// 			Role:    agent.Assistant,
-	// 			Content: "",
-	// 		},
-	// 	}, nil
-	// }
+	b, _ := json.MarshalIndent(parsed, "", "  ")
+	fmt.Println(string(b), "<<<<<==2222222===")
+	// content := parsed.Choices[0].Message.Content
+
+	// toolCalls, text := ParseToolCalls(content)
+
+	// fmt.Println(text, "<<<<<=====")
+
 	return agent.AgentResponse{
 		Message: agent.Message{
 			Role:    agent.Assistant,
 			Content: "",
+			// Content:   text,
+			// ToolCalls: toolCalls,
 		},
 	}, nil
 }
